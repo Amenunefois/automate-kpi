@@ -1,0 +1,6 @@
+notion-client
+python-dotenv
+streamlit
+pandas
+gspread
+oauth2client
