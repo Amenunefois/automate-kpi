@@ -3,31 +3,27 @@ import pandas as pd
 import altair as alt
 from filters import filtres_recoltes, filtres_ventes, filtres_evolution_prix
 import streamlit as st
-import subprocess
-import time
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+import streamlit as st
+from src.fetch_sheet import fetch_data_from_sheet
+from src.kpi.run_kpi import run_all_kpis
 
 st.set_page_config(page_title="Dashboard Agricole", layout="wide")
 
-@st.cache_resource
-def update_data():
-    msg = st.empty()  # conteneur temporaire
-    msg.info("🔄 Mise à jour des données (unique par session)...")
+# ⚙️ Fonction combinée pour maj données + KPI
+@st.cache_data(show_spinner="🔄 Mise à jour des données (Google Sheets + KPI)...")
+def update_all_data():
+    fetch_data_from_sheet()
+    run_all_kpis()
 
-    result = subprocess.run(["python", "run_all.py"], capture_output=True, text=True)
-
-    msg.empty()  # efface le message
-
-    return result
-
-# 📦 Lancer une seule fois
-result = update_data()
-
-if result.returncode == 0:
-    message = st.empty()
-    
-else:
-    st.error("❌ Erreur pendant la mise à jour des données.")
-    st.text(result.stderr)
+try:
+    update_all_data()
+    st.success("✅ Données mises à jour et KPI recalculés.")
+except Exception as e:
+    st.error(f"❌ Échec pendant la mise à jour ou le calcul des KPI : {e}")
 
 
 # ✅ Chargement des données
