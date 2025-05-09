@@ -1,32 +1,28 @@
 import os
-import sys
+import json
 import logging
 import pandas as pd
 import gspread
 from dotenv import dotenv_values
 from oauth2client.service_account import ServiceAccountCredentials
+import streamlit as st
 
-# 📦 Résolution robuste du répertoire racine (même avec PyInstaller)
-def resolve_base_path():
-    if getattr(sys, 'frozen', False):
-        return sys._MEIPASS  # mode PyInstaller
-    return os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
-BASE_PATH = resolve_base_path()
+
+CREDENTIALS_JSON = json.loads(st.secrets["GOOGLE_CREDS"])
+SHEET_NAME = st.secrets["SHEET_NAME"]
+SHEET_TAB = st.secrets.get("SHEET_TAB", "Feuille 1")
+BASE_PATH = "/tmp"
 
 # 🔐 Chargement sécurisé du fichier .env
 env_path = os.path.join(BASE_PATH, '.env')
 env_vars = dotenv_values(env_path)
 
-CREDENTIALS_PATH = os.path.join(BASE_PATH, env_vars.get("GOOGLE_CREDS", "credentials/credentials.json"))
-SHEET_NAME = env_vars.get("SHEET_NAME", "")
-SHEET_TAB = env_vars.get("SHEET_TAB", "Feuille 1")
 
 # ✅ Vérification de sécurité
 if not SHEET_NAME:
     raise ValueError("SHEET_NAME est manquant dans le fichier .env")
-if not os.path.exists(CREDENTIALS_PATH):
-    raise FileNotFoundError(f"Fichier credentials introuvable : {CREDENTIALS_PATH}")
+
 
 # 📂 Configuration des logs
 log_dir = os.path.join(BASE_PATH, 'logs')
@@ -54,7 +50,7 @@ def fetch_data_from_sheet():
             "https://spreadsheets.google.com/feeds",
             "https://www.googleapis.com/auth/drive"
         ]
-        creds = ServiceAccountCredentials.from_json_keyfile_name(CREDENTIALS_PATH, scope)
+        creds = ServiceAccountCredentials.from_json_keyfile_name(CREDENTIALS_JSON, scope)
         client = gspread.authorize(creds)
 
         sheet = client.open(SHEET_NAME).worksheet(SHEET_TAB)
